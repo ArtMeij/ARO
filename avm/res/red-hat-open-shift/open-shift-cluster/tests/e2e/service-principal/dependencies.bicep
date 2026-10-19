@@ -12,6 +12,7 @@ param clusterServicePrincipalObjectId string
 
 var addressPrefix = '10.0.0.0/22'
 var networkContributorRoleId = '4d97b98b-1d4f-4787-a291-c67834d212e7' // Network Contributor
+var contributorRoleId = 'b24988ac-6180-42a0-ab88-20f7382dd24c' // Contributor
 
 resource virtualNetwork 'Microsoft.Network/virtualNetworks@2024-10-01' = {
   name: virtualNetworkName
@@ -48,18 +49,27 @@ resource virtualNetwork 'Microsoft.Network/virtualNetworks@2024-10-01' = {
   }
 }
 
-// Both the ARO resource provider and the cluster service principal manage the cluster network.
-resource networkContributorRoleAssignments 'Microsoft.Authorization/roleAssignments@2022-04-01' = [
-  for principalId in [aroRpObjectId, clusterServicePrincipalObjectId]: {
-    name: guid(virtualNetwork.id, principalId, networkContributorRoleId)
-    scope: virtualNetwork
-    properties: {
-      roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', networkContributorRoleId)
-      principalId: principalId
-      principalType: 'ServicePrincipal'
-    }
+// The ARO resource provider manages the cluster network.
+resource aroRpNetworkContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(virtualNetwork.id, aroRpObjectId, networkContributorRoleId)
+  scope: virtualNetwork
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', networkContributorRoleId)
+    principalId: aroRpObjectId
+    principalType: 'ServicePrincipal'
   }
-]
+}
+
+// A service principal cluster needs Contributor on the resource group holding the cluster (and its VNet).
+// https://learn.microsoft.com/en-us/azure/openshift/howto-create-service-principal
+resource clusterSpContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, clusterServicePrincipalObjectId, contributorRoleId)
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', contributorRoleId)
+    principalId: clusterServicePrincipalObjectId
+    principalType: 'ServicePrincipal'
+  }
+}
 
 @description('The resource ID of the master subnet.')
 output masterSubnetResourceId string = virtualNetwork::masterSubnet.id
