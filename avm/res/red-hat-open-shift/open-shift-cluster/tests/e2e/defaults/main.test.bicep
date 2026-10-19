@@ -20,9 +20,8 @@ param serviceShort string = 'rhocmin'
 @description('Optional. A token to inject into the name of each resource.')
 param namePrefix string = '#_namePrefix_#'
 
-// TODO: confirm how the AVM CI injects tenant-specific values; this differs per tenant.
-@description('Required. The object ID of the "Azure Red Hat OpenShift RP" service principal in the test tenant.')
-param aroRpObjectId string
+@description('Required. The object ID of the "Azure Red Hat OpenShift RP" service principal in the test tenant. This value is tenant-specific and must be provided by the CI as a GitHub secret or variable named \'CI_ARO_RP_OBJECT_ID\'.')
+param aroRpObjectId string = ''
 
 // ============ //
 // Dependencies //

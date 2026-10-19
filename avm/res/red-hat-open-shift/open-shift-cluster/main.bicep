@@ -21,7 +21,7 @@ param enableTelemetry bool = true
 
 // ---------- Cluster profile ---------- //
 
-@description('Required. The OpenShift version of the cluster (e.g. `4.17.27`). Only used at creation time; in-cluster upgrades are not overwritten on redeploy.')
+@description('Required. The OpenShift version of the cluster (e.g. `4.17.27`). Create-only: after an in-cluster upgrade, pass the version the cluster currently runs.')
 param version string
 
 @description('Optional. The domain for the cluster. Either a prefix (results in `<prefix>.<location>.aroapp.io`) or a fully qualified domain name, in which case you must create the API and ingress DNS A records yourself. Defaults to a generated 8-character prefix.')
@@ -154,10 +154,11 @@ var formattedRoleAssignments = [
 // Dependencies //
 // ============ //
 
+var telemetryIdPrefix = loadJsonContent('metadata.json', 'telemetryIdPrefix')
+
 #disable-next-line no-deployments-resources
 resource avmTelemetry 'Microsoft.Resources/deployments@2025-04-01' = if (enableTelemetry) {
-  // TODO: replace with the telemetry ID assigned to this module in the AVM module index.
-  name: '46d3xbcp.res.redhatopenshift-openshiftcluster.${replace('-..--..-', '.', '-')}.${substring(uniqueString(deployment().name, location), 0, 4)}'
+  name: '${telemetryIdPrefix}.${replace('-..--..-', '.', '-')}.${substring(uniqueString(deployment().name, location), 0, 4)}'
   properties: {
     mode: 'Incremental'
     template: {
@@ -191,12 +192,8 @@ resource openShiftCluster 'Microsoft.RedHatOpenShift/openShiftClusters@2025-07-2
       domain: domain
       fipsValidatedModules: fipsValidatedModules
       pullSecret: pullSecret
-      // `version` and `resourceGroupId` are create-only. After an in-cluster upgrade the deployed version
-      // differs from the parameter, so on redeploy we send back what the cluster already reports.
-      resourceGroupId: this.exists()
-        ? this.existingResource()!.properties.clusterProfile.resourceGroupId
-        : '${subscription().id}/resourceGroups/${clusterResourceGroupName}'
-      version: this.exists() ? this.existingResource()!.properties.clusterProfile.version : version
+      resourceGroupId: '${subscription().id}/resourceGroups/${clusterResourceGroupName}'
+      version: version
     }
     ingressProfiles: [
       {
