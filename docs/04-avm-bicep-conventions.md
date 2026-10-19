@@ -20,7 +20,7 @@ avm/res/<provider>/<resource>/
 2. Parameters. Descriptions start with `Required.`, `Optional.` or `Conditional.`. Resource IDs are named `...ResourceId`. Passthrough objects are typed `resourceInput<'Type@api'>.properties.x?`.
 3. Imports from `br/public:avm/utl/types/avm-common-types:<ver>`: `lockType`, `roleAssignmentType`, `managedIdentityAllType`/`managedIdentityOnlyUserAssignedType`, `diagnosticSettingFullType`, `privateEndpointSingleServiceType`, `customerManagedKeyType`.
 4. Variables: `formattedUserAssignedIdentities` (array → object reduce), `identity`, `builtInRoleNames`, `formattedRoleAssignments`, `enableReferencedModulesTelemetry = false`.
-5. `avmTelemetry` deployment resource: `46d3xbcp.res.<provider>-<resource>.${replace('-..--..-', '.', '-')}.${substring(uniqueString(deployment().name, location), 0, 4)}`.
+5. `avmTelemetry` deployment resource: `var telemetryIdPrefix = loadJsonContent('metadata.json', 'telemetryIdPrefix')`, name `'${telemetryIdPrefix}.${replace('-..--..-', '.', '-')}.${substring(uniqueString(deployment().name, location), 0, 4)}'`. The prefix (`46d3xbcp.res.<7 hex>`) is generated into `metadata.json` by `Set-ModuleFileAndFolderSetup.ps1`; no literal `46d3xbcp.` may appear in `main.bicep` (static test, Oct 2026).
 6. The main resource, then child modules (pass `enableTelemetry: enableReferencedModulesTelemetry`).
 7. `<res>_lock` (`Microsoft.Authorization/locks@2020-05-01`), `<res>_diagnosticSettings`, `<res>_roleAssignments` (`Microsoft.Authorization/roleAssignments@2022-04-01`, name `guid(res.id, principalId, roleDefinitionId)`).
 8. Outputs: always `resourceId`, `name`, `resourceGroupName`, `location`. Nullable outputs use `string?` with `.?` access. `systemAssignedMIPrincipalId` is included when relevant.
